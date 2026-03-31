@@ -87,7 +87,7 @@
                 android:textColor="@color/white"
                 android:textSize="15sp" />
 
-            <com.google.android.material.switchmaterial.SwitchMaterial
+            <Switch
                 android:id="@+id/enable_switch"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content" />
