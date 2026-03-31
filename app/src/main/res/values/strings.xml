@@ -11,4 +11,5 @@
     <string name="wifi_not_connected">WiFi not connected</string>
     <string name="cooldown_note">5-minute cooldown between disables to prevent rapid toggling</string>
     <string name="reboot_note">Changes take effect after reboot</string>
+    <string name="pref_language_title">Language</string>
 </resources>
