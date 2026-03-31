@@ -1,0 +1,12 @@
+<resources>
+    <style name="Theme.AppDefault" parent="Theme.Material3.DayNight">
+        <item name="colorPrimary">@color/colorPrimaryAccent</item>
+        <item name="colorPrimaryVariant">@color/colorPrimaryAccent</item>
+        <item name="colorOnPrimary">@color/colorPrimaryAccent</item>
+        <item name="colorSecondary">@color/colorPrimaryAccent</item>
+        <item name="colorSecondaryVariant">@color/colorPrimaryAccent</item>
+        <item name="colorOnSecondary">@color/colorPrimaryAccent</item>
+        <item name="android:statusBarColor">@color/white</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+</resources>

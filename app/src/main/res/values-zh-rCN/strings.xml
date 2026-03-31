@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">WiFi 弱信号自动关闭</string>
+    <string name="xposed_desc">当 WiFi 信号低于设定阈值时自动关闭 WiFi</string>
+    <string name="module_not_activated">模块未激活</string>
+    <string name="module_is_activated">模块已激活</string>
+    <string name="pref_enable_title">启用自动关闭</string>
+    <string name="pref_threshold_title">信号阈值</string>
+    <string name="pref_threshold_desc">当信号弱于以下值时关闭 WiFi：</string>
+    <string name="threshold_value">%d dBm</string>
+    <string name="current_rssi">当前 WiFi 信号：%d dBm</string>
+    <string name="wifi_not_connected">WiFi 未连接</string>
+    <string name="cooldown_note">每次关闭后有 5 分钟冷却，避免频繁切换</string>
+    <string name="reboot_note">修改设置后需重启生效</string>
+</resources>

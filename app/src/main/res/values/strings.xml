@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">WiFi Auto Disable</string>
+    <string name="xposed_desc">Automatically disables WiFi when signal is weaker than a set threshold</string>
+    <string name="module_not_activated">Module Not Activated</string>
+    <string name="module_is_activated">Module Activated</string>
+    <string name="pref_enable_title">Enable Auto Disable</string>
+    <string name="pref_threshold_title">Signal Threshold</string>
+    <string name="pref_threshold_desc">Disable WiFi when signal is weaker than:</string>
+    <string name="threshold_value">%d dBm</string>
+    <string name="current_rssi">Current WiFi signal: %d dBm</string>
+    <string name="wifi_not_connected">WiFi not connected</string>
+    <string name="cooldown_note">5-minute cooldown between disables to prevent rapid toggling</string>
+    <string name="reboot_note">Changes take effect after reboot</string>
+</resources>
