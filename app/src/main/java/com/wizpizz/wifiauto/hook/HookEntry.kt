@@ -15,7 +15,7 @@ object HookEntry : IYukiHookXposedInit {
             }
         }
 
-        loadApp(name = "android") {
+        loadApp(name = "com.android.systemui") {
             WifiAutoDisableHook.apply(this)
         }
     }
