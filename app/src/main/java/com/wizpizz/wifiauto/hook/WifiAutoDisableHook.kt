@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.net.NetworkInfo
 import android.net.wifi.WifiManager
 import android.os.Handler
 import android.util.Log
@@ -19,14 +20,14 @@ const val DEFAULT_THRESHOLD = -75  // dBm
 object WifiAutoDisableHook {
 
     @Volatile
-    private var lastDisableTimeMs = 0L
-    private const val COOLDOWN_MS = 5 * 60 * 1000L // 5 minutes between disables
-    private const val SCAN_INTERVAL_MS = 30 * 1000L // scan every 30 seconds
+    private var lastDisconnectTimeMs = 0L
+    private const val COOLDOWN_MS = 5 * 60 * 1000L
 
     @Volatile
-    private var wasDisabledByUs = false
+    private var wasDisconnectedByUs = false
     private var scanRunnable: Runnable? = null
     private var scanHandler: Handler? = null
+    private const val SCAN_INTERVAL_MS = 30 * 1000L
 
     fun apply(packageParam: PackageParam) {
         packageParam.apply {
@@ -51,7 +52,7 @@ object WifiAutoDisableHook {
 
                     val handler = Handler(context.mainLooper)
 
-                    // RSSI receiver: disable WiFi when signal is weak
+                    // RSSI receiver: disconnect when signal is weak
                     val rssiReceiver = object : BroadcastReceiver() {
                         override fun onReceive(ctx: Context, intent: Intent) {
                             if (intent.action != WifiManager.RSSI_CHANGED_ACTION) return
@@ -61,57 +62,83 @@ object WifiAutoDisableHook {
                             Log.d(TAG, "RSSI=$rssi dBm, threshold=$threshold dBm")
 
                             if (rssi < threshold) {
-                                val now = System.currentTimeMillis()
-                                if (now - lastDisableTimeMs < COOLDOWN_MS) {
-                                    Log.d(TAG, "Cooldown active, skipping disable")
+                                // If we already disconnected, check if Android auto-reconnected to a weak AP
+                                if (wasDisconnectedByUs) {
+                                    Log.d(TAG, "Still weak after reconnect, disconnecting again")
+                                    wifiManager.disconnect()
                                     return
                                 }
-                                Log.i(TAG, "Signal weak ($rssi < $threshold dBm), disabling WiFi")
-                                @Suppress("DEPRECATION")
-                                wifiManager.setWifiEnabled(false)
-                                lastDisableTimeMs = now
+
+                                val now = System.currentTimeMillis()
+                                if (now - lastDisconnectTimeMs < COOLDOWN_MS) {
+                                    Log.d(TAG, "Cooldown active, skipping disconnect")
+                                    return
+                                }
+
+                                Log.i(TAG, "Signal weak ($rssi < $threshold dBm), disconnecting WiFi")
+                                wifiManager.disconnect()
+                                lastDisconnectTimeMs = now
+
                                 if (autoReconnect) {
-                                    wasDisabledByUs = true
-                                    startScanPolling(handler, wifiManager)
+                                    wasDisconnectedByUs = true
+                                    startScanPolling(handler, wifiManager, threshold)
                                 }
                             }
                         }
                     }
                     context.registerReceiver(rssiReceiver, IntentFilter(WifiManager.RSSI_CHANGED_ACTION))
 
-                    // Scan results receiver: re-enable WiFi when signal recovers
+                    // Scan results receiver: reconnect when signal recovers
                     if (autoReconnect) {
                         val scanReceiver = object : BroadcastReceiver() {
                             override fun onReceive(ctx: Context, intent: Intent) {
                                 if (intent.action != WifiManager.SCAN_RESULTS_AVAILABLE_ACTION) return
-                                if (!wasDisabledByUs) return
-                                if (wifiManager.isWifiEnabled) {
-                                    // WiFi was turned on by someone else
-                                    wasDisabledByUs = false
-                                    stopScanPolling()
-                                    return
-                                }
+                                if (!wasDisconnectedByUs) return
+
+                                @Suppress("DEPRECATION")
+                                val connInfo = wifiManager.connectionInfo
+                                val connected = connInfo?.networkId != -1
+                                if (connected) return  // already reconnected, wait for RSSI check
+
                                 @Suppress("DEPRECATION")
                                 val results = wifiManager.scanResults ?: return
                                 @Suppress("DEPRECATION")
                                 val configuredSsids = wifiManager.configuredNetworks
-                                    ?.map { it.SSID }
-                                    ?.toSet() ?: return
+                                    ?.map { it.SSID }?.toSet() ?: return
 
                                 val strongEnough = results.any { sr ->
                                     sr.SSID in configuredSsids && sr.level >= threshold
                                 }
 
                                 if (strongEnough) {
-                                    Log.i(TAG, "Signal recovered, re-enabling WiFi")
-                                    wasDisabledByUs = false
+                                    Log.i(TAG, "Signal recovered, reconnecting WiFi")
+                                    wasDisconnectedByUs = false
                                     stopScanPolling()
-                                    @Suppress("DEPRECATION")
-                                    wifiManager.setWifiEnabled(true)
+                                    wifiManager.reconnect()
                                 }
                             }
                         }
-                        context.registerReceiver(scanReceiver, IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION))
+
+                        // Network state receiver: if user manually reconnects, cancel our tracking
+                        val networkReceiver = object : BroadcastReceiver() {
+                            override fun onReceive(ctx: Context, intent: Intent) {
+                                if (intent.action != WifiManager.NETWORK_STATE_CHANGED_ACTION) return
+                                if (!wasDisconnectedByUs) return
+                                @Suppress("DEPRECATION")
+                                val networkInfo = intent.getParcelableExtra<NetworkInfo>(WifiManager.EXTRA_NETWORK_INFO)
+                                if (networkInfo?.isConnected == true) {
+                                    Log.d(TAG, "User manually reconnected, cancelling tracking")
+                                    wasDisconnectedByUs = false
+                                    stopScanPolling()
+                                }
+                            }
+                        }
+
+                        val filter = IntentFilter().apply {
+                            addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)
+                        }
+                        context.registerReceiver(scanReceiver, filter)
+                        context.registerReceiver(networkReceiver, IntentFilter(WifiManager.NETWORK_STATE_CHANGED_ACTION))
                     }
 
                     Log.d(TAG, "BroadcastReceivers registered")
@@ -120,13 +147,13 @@ object WifiAutoDisableHook {
         }
     }
 
-    private fun startScanPolling(handler: Handler, wifiManager: WifiManager) {
+    private fun startScanPolling(handler: Handler, wifiManager: WifiManager, threshold: Int) {
         stopScanPolling()
         scanHandler = handler
         val runnable = object : Runnable {
             override fun run() {
-                if (wasDisabledByUs) {
-                    Log.d(TAG, "Polling scan for WiFi recovery...")
+                if (wasDisconnectedByUs) {
+                    Log.d(TAG, "Polling scan for signal recovery...")
                     @Suppress("DEPRECATION")
                     wifiManager.startScan()
                     handler.postDelayed(this, SCAN_INTERVAL_MS)
