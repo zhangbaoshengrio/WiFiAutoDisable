@@ -3,7 +3,7 @@
     <string name="xposed_desc">当 WiFi 信号低于设定阈值时自动关闭 WiFi</string>
     <string name="module_not_activated">模块未激活</string>
     <string name="module_is_activated">模块已激活</string>
-    <string name="pref_enable_title">启用自动关闭</string>
+    <string name="pref_enable_title">启用模块</string>
     <string name="pref_threshold_title">信号阈值</string>
     <string name="pref_threshold_desc">当信号弱于以下值时断开 WiFi：</string>
     <string name="threshold_value">%d dBm</string>

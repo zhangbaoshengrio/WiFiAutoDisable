@@ -3,7 +3,7 @@
     <string name="xposed_desc">Automatically disables WiFi when signal is weaker than a set threshold</string>
     <string name="module_not_activated">Module Not Activated</string>
     <string name="module_is_activated">Module Activated</string>
-    <string name="pref_enable_title">Enable Auto Disable</string>
+    <string name="pref_enable_title">Enable Module</string>
     <string name="pref_threshold_title">Signal Threshold</string>
     <string name="pref_threshold_desc">Disconnect WiFi when signal is weaker than:</string>
     <string name="threshold_value">%d dBm</string>
