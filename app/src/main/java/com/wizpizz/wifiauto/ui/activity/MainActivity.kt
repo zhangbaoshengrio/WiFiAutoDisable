@@ -12,6 +12,7 @@ import com.highcapable.yukihookapi.YukiHookAPI
 import com.highcapable.yukihookapi.hook.factory.prefs
 import com.wizpizz.wifiauto.R
 import com.wizpizz.wifiauto.hook.DEFAULT_THRESHOLD
+import com.wizpizz.wifiauto.hook.PREF_AUTO_RECONNECT
 import com.wizpizz.wifiauto.hook.PREF_ENABLED
 import com.wizpizz.wifiauto.hook.PREF_THRESHOLD
 import com.wizpizz.wifiauto.ui.activity.base.BaseActivity
@@ -32,6 +33,7 @@ class MainActivity : BaseActivity() {
         val statusText = findViewById<TextView>(R.id.main_text_status)
         val rssiText = findViewById<TextView>(R.id.current_rssi_text)
         val enableSwitch = findViewById<Switch>(R.id.enable_switch)
+        val autoReconnectSwitch = findViewById<Switch>(R.id.auto_reconnect_switch)
         val seekBar = findViewById<SeekBar>(R.id.threshold_seek_bar)
         val thresholdText = findViewById<TextView>(R.id.threshold_value_text)
         val languageSpinner = findViewById<Spinner>(R.id.language_spinner)
@@ -51,6 +53,12 @@ class MainActivity : BaseActivity() {
         enableSwitch.isChecked = prefs.getBoolean(PREF_ENABLED, true)
         enableSwitch.setOnCheckedChangeListener { _, isChecked ->
             prefs.native().edit { putBoolean(PREF_ENABLED, isChecked) }
+        }
+
+        // Auto reconnect toggle
+        autoReconnectSwitch.isChecked = prefs.getBoolean(PREF_AUTO_RECONNECT, false)
+        autoReconnectSwitch.setOnCheckedChangeListener { _, isChecked ->
+            prefs.native().edit { putBoolean(PREF_AUTO_RECONNECT, isChecked) }
         }
 
         // Threshold SeekBar
