@@ -15,13 +15,14 @@ private const val TAG = "WifiAutoDisable"
 const val PREF_ENABLED = "wifi_auto_disable_enabled"
 const val PREF_THRESHOLD = "wifi_rssi_threshold"
 const val PREF_AUTO_RECONNECT = "wifi_auto_reconnect_enabled"
+const val PREF_COOLDOWN = "wifi_cooldown_minutes"
 const val DEFAULT_THRESHOLD = -75  // dBm
+const val DEFAULT_COOLDOWN_MINUTES = 5
 
 object WifiAutoDisableHook {
 
     @Volatile
     private var lastDisconnectTimeMs = 0L
-    private const val COOLDOWN_MS = 5 * 60 * 1000L
 
     @Volatile
     private var wasDisconnectedByUs = false
@@ -39,6 +40,7 @@ object WifiAutoDisableHook {
 
             val threshold = prefs.getInt(PREF_THRESHOLD, DEFAULT_THRESHOLD)
             val autoReconnect = prefs.getBoolean(PREF_AUTO_RECONNECT, false)
+            val cooldownMs = prefs.getInt(PREF_COOLDOWN, DEFAULT_COOLDOWN_MINUTES) * 60 * 1000L
             Log.d(TAG, "WifiAutoDisableHook loaded, threshold=$threshold dBm, autoReconnect=$autoReconnect")
 
             onAppLifecycle {
@@ -70,7 +72,7 @@ object WifiAutoDisableHook {
                                 }
 
                                 val now = System.currentTimeMillis()
-                                if (now - lastDisconnectTimeMs < COOLDOWN_MS) {
+                                if (now - lastDisconnectTimeMs < cooldownMs) {
                                     Log.d(TAG, "Cooldown active, skipping disconnect")
                                     return
                                 }

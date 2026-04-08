@@ -11,8 +11,10 @@ import android.widget.TextView
 import com.highcapable.yukihookapi.YukiHookAPI
 import com.highcapable.yukihookapi.hook.factory.prefs
 import com.wizpizz.wifiauto.R
+import com.wizpizz.wifiauto.hook.DEFAULT_COOLDOWN_MINUTES
 import com.wizpizz.wifiauto.hook.DEFAULT_THRESHOLD
 import com.wizpizz.wifiauto.hook.PREF_AUTO_RECONNECT
+import com.wizpizz.wifiauto.hook.PREF_COOLDOWN
 import com.wizpizz.wifiauto.hook.PREF_ENABLED
 import com.wizpizz.wifiauto.hook.PREF_THRESHOLD
 import com.wizpizz.wifiauto.ui.activity.base.BaseActivity
@@ -35,6 +37,8 @@ class MainActivity : BaseActivity() {
         val enableSwitch = findViewById<Switch>(R.id.enable_switch)
         val autoReconnectSwitch = findViewById<Switch>(R.id.auto_reconnect_switch)
         val seekBar = findViewById<SeekBar>(R.id.threshold_seek_bar)
+        val cooldownSeekBar = findViewById<SeekBar>(R.id.cooldown_seek_bar)
+        val cooldownText = findViewById<TextView>(R.id.cooldown_value_text)
         val thresholdText = findViewById<TextView>(R.id.threshold_value_text)
         val languageSpinner = findViewById<Spinner>(R.id.language_spinner)
 
@@ -74,6 +78,22 @@ class MainActivity : BaseActivity() {
             override fun onStartTrackingTouch(sb: SeekBar) {}
             override fun onStopTrackingTouch(sb: SeekBar) {
                 prefs.native().edit { putInt(PREF_THRESHOLD, SEEKBAR_MIN_DBM + sb.progress) }
+            }
+        })
+
+        // Cooldown SeekBar (1~30 minutes)
+        val cooldownMin = prefs.getInt(PREF_COOLDOWN, DEFAULT_COOLDOWN_MINUTES)
+        cooldownSeekBar.max = 29
+        cooldownSeekBar.progress = (cooldownMin - 1).coerceIn(0, 29)
+        cooldownText.text = getString(R.string.cooldown_value, cooldownMin)
+
+        cooldownSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(sb: SeekBar, progress: Int, fromUser: Boolean) {
+                cooldownText.text = getString(R.string.cooldown_value, progress + 1)
+            }
+            override fun onStartTrackingTouch(sb: SeekBar) {}
+            override fun onStopTrackingTouch(sb: SeekBar) {
+                prefs.native().edit { putInt(PREF_COOLDOWN, sb.progress + 1) }
             }
         })
 

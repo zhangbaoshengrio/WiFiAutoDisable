@@ -9,7 +9,10 @@
     <string name="threshold_value">%d dBm</string>
     <string name="current_rssi">Current WiFi signal: %d dBm</string>
     <string name="wifi_not_connected">WiFi not connected</string>
-    <string name="cooldown_note">5-minute cooldown between disconnects to prevent rapid toggling</string>
+    <string name="pref_cooldown_title">Disconnect Cooldown</string>
+    <string name="pref_cooldown_desc">Minimum time between disconnects:</string>
+    <string name="cooldown_value">%d min</string>
+    <string name="cooldown_note">Cooldown prevents rapid toggling when signal is unstable</string>
     <string name="reboot_note">Changes take effect after reboot</string>
     <string name="pref_auto_reconnect_title">Auto Reconnect</string>
     <string name="pref_language_title">Language</string>
