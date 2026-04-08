@@ -26,6 +26,8 @@ object WifiAutoDisableHook {
 
     @Volatile
     private var wasDisconnectedByUs = false
+    @Volatile
+    private var bypassCooldownOnce = false
     private var scanRunnable: Runnable? = null
     private var scanHandler: Handler? = null
     private const val SCAN_INTERVAL_MS = 30 * 1000L
@@ -68,6 +70,19 @@ object WifiAutoDisableHook {
                                 if (wasDisconnectedByUs) {
                                     Log.d(TAG, "Still weak after reconnect, disconnecting again")
                                     wifiManager.disconnect()
+                                    return
+                                }
+
+                                // Skip cooldown once if we just triggered a reconnect and signal is still weak
+                                if (bypassCooldownOnce) {
+                                    bypassCooldownOnce = false
+                                    Log.d(TAG, "Signal still weak after reconnect, disconnecting (bypass cooldown)")
+                                    wifiManager.disconnect()
+                                    lastDisconnectTimeMs = System.currentTimeMillis()
+                                    if (autoReconnect) {
+                                        wasDisconnectedByUs = true
+                                        startScanPolling(handler, wifiManager, threshold)
+                                    }
                                     return
                                 }
 
@@ -115,6 +130,7 @@ object WifiAutoDisableHook {
                                 if (strongEnough) {
                                     Log.i(TAG, "Signal recovered, reconnecting WiFi")
                                     wasDisconnectedByUs = false
+                                    bypassCooldownOnce = true
                                     stopScanPolling()
                                     wifiManager.reconnect()
                                 }
@@ -131,6 +147,7 @@ object WifiAutoDisableHook {
                                 if (networkInfo?.isConnected == true) {
                                     Log.d(TAG, "User manually reconnected, cancelling tracking")
                                     wasDisconnectedByUs = false
+                                    bypassCooldownOnce = true
                                     stopScanPolling()
                                 }
                             }
